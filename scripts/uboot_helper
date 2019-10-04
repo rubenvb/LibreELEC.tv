@@ -43,6 +43,7 @@ devices = {
       'rockbox' : { 'dtb' : 'rk3328-rockbox.dtb', 'config' : 'evb-rk3328_defconfig' },
     },
     'RK3399' : {
+	  'nanopct4' : { 'dtb' : 'rk3399-nanopi4-rev00.dtb', 'config' : 'evb-rk3399_config' },
       'khadas-edge' : { 'dtb' : 'rk3399-khadas-edge.dtb', 'config' : 'evb-rk3399_config' },
       'rock960' : { 'dtb' : 'rk3399-rock960.dtb', 'config' : 'evb-rk3399_config' },
       'rock-pi-4' : { 'dtb' : 'rk3399-rock-pi-4.dtb', 'config' : 'evb-rk3399_config' },
