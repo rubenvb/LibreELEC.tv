@@ -1,0 +1,46 @@
+From b76637491013b2298cf46729767ba76544d4023b Mon Sep 17 00:00:00 2001
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Date: Thu, 14 Apr 2016 14:02:15 +0100
+Subject: [PATCH] UPSTREAM: mmc: pwrseq_emmc: add to_pwrseq_emmc() macro
+
+This patch adds to_pwrseq_emmc() macro to make the code more readable.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+(cherry picked from commit f01b72d0fd53b61cafd25b16d15e18b1ef8ae065)
+---
+ drivers/mmc/core/pwrseq_emmc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mmc/core/pwrseq_emmc.c b/drivers/mmc/core/pwrseq_emmc.c
+index 4a82bc77fe49..c2d732aa464c 100644
+--- a/drivers/mmc/core/pwrseq_emmc.c
++++ b/drivers/mmc/core/pwrseq_emmc.c
+@@ -25,6 +25,8 @@ struct mmc_pwrseq_emmc {
+ 	struct gpio_desc *reset_gpio;
+ };
+ 
++#define to_pwrseq_emmc(p) container_of(p, struct mmc_pwrseq_emmc, pwrseq)
++
+ static void __mmc_pwrseq_emmc_reset(struct mmc_pwrseq_emmc *pwrseq)
+ {
+ 	gpiod_set_value(pwrseq->reset_gpio, 1);
+@@ -35,16 +37,14 @@ static void __mmc_pwrseq_emmc_reset(struct mmc_pwrseq_emmc *pwrseq)
+ 
+ static void mmc_pwrseq_emmc_reset(struct mmc_host *host)
+ {
+-	struct mmc_pwrseq_emmc *pwrseq = container_of(host->pwrseq,
+-					struct mmc_pwrseq_emmc, pwrseq);
++	struct mmc_pwrseq_emmc *pwrseq =  to_pwrseq_emmc(host->pwrseq);
+ 
+ 	__mmc_pwrseq_emmc_reset(pwrseq);
+ }
+ 
+ static void mmc_pwrseq_emmc_free(struct mmc_host *host)
+ {
+-	struct mmc_pwrseq_emmc *pwrseq = container_of(host->pwrseq,
+-					struct mmc_pwrseq_emmc, pwrseq);
++	struct mmc_pwrseq_emmc *pwrseq =  to_pwrseq_emmc(host->pwrseq);
+ 
+ 	unregister_restart_handler(&pwrseq->reset_nb);
+ 	gpiod_put(pwrseq->reset_gpio);

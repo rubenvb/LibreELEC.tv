@@ -1,0 +1,50 @@
+From e85294cdf12c6a6e6fb3c24cae1ad0994ae6aca2 Mon Sep 17 00:00:00 2001
+From: Ulf Hansson <ulf.hansson@linaro.org>
+Date: Sat, 6 May 2017 11:43:05 +0200
+Subject: [PATCH] UPSTREAM: mmc: pwrseq_simple: Parse DTS for the
+ power-off-delay-us property
+
+If the optional power-off-delay-us property is found, insert the
+corresponding delay after asserting the GPIO during power off. This enables
+a graceful shutdown sequence for some devices.
+
+Cc: linux-mmc@vger.kernel.org
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+(cherry picked from commit e9256e142f597edf90c68cec22db4c4aebaa27de)
+---
+ drivers/mmc/core/pwrseq_simple.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/mmc/core/pwrseq_simple.c b/drivers/mmc/core/pwrseq_simple.c
+index 1304160de168..13ef162cf066 100644
+--- a/drivers/mmc/core/pwrseq_simple.c
++++ b/drivers/mmc/core/pwrseq_simple.c
+@@ -27,6 +27,7 @@ struct mmc_pwrseq_simple {
+ 	struct mmc_pwrseq pwrseq;
+ 	bool clk_enabled;
+ 	u32 post_power_on_delay_ms;
++	u32 power_off_delay_us;
+ 	struct clk *ext_clk;
+ 	struct gpio_descs *reset_gpios;
+ };
+@@ -78,6 +79,10 @@ static void mmc_pwrseq_simple_power_off(struct mmc_host *host)
+ 
+ 	mmc_pwrseq_simple_set_gpios_value(pwrseq, 1);
+ 
++	if (pwrseq->power_off_delay_us)
++		usleep_range(pwrseq->power_off_delay_us,
++			2 * pwrseq->power_off_delay_us);
++
+ 	if (!IS_ERR(pwrseq->ext_clk) && pwrseq->clk_enabled) {
+ 		clk_disable_unprepare(pwrseq->ext_clk);
+ 		pwrseq->clk_enabled = false;
+@@ -119,6 +124,8 @@ static int mmc_pwrseq_simple_probe(struct platform_device *pdev)
+ 
+ 	device_property_read_u32(dev, "post-power-on-delay-ms",
+ 				 &pwrseq->post_power_on_delay_ms);
++	device_property_read_u32(dev, "power-off-delay-us",
++				 &pwrseq->power_off_delay_us);
+ 
+ 	pwrseq->pwrseq.dev = dev;
+ 	pwrseq->pwrseq.ops = &mmc_pwrseq_simple_ops;

@@ -1,0 +1,27 @@
+From 569de779d11ff8739e9ab4d8b4a5c505d1892e12 Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Tue, 24 Jul 2018 15:49:29 +0200
+Subject: [PATCH] mmc: core: use hs400es voltage flags
+
+---
+ drivers/mmc/core/mmc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+index a814eb6882aa..1d950f0b3aa6 100644
+--- a/drivers/mmc/core/mmc.c
++++ b/drivers/mmc/core/mmc.c
+@@ -1256,10 +1256,10 @@
+ 		goto out_err;
+ 	}
+ 
+-	if (card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS200_1_2V)
++	if (card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400_1_2V)
+ 		err = mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_120);
+ 
+-	if (err && card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS200_1_8V)
++	if (err && card->mmc_avail_type & EXT_CSD_CARD_TYPE_HS400_1_8V)
+ 		err = mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_180);
+ 
+ 	/* If fails try again during next card power cycle */
+

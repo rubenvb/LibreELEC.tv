@@ -17,9 +17,9 @@ PKG_PATCH_DIRS="$LINUX"
 
 case "$LINUX" in
   rockchip-4.4)
-    PKG_VERSION="aa8bacf821e5c8ae6dd8cae8d64011c741659945"
-    PKG_SHA256="a2760fe89a15aa7be142fd25fb08ebd357c5d855c41f1612cf47c6e89de39bb3"
-    PKG_URL="https://github.com/rockchip-linux/kernel/archive/$PKG_VERSION.tar.gz"
+    PKG_VERSION="6a7814c81ef4cdcd153848e9dde10d44e85a8b02"
+    PKG_SHA256="8b33e6381be43618fa74c7d00b6b024a5c11a55dcb2e0ba42270fc9d4fc985e5"
+    PKG_URL="https://github.com/friendlyarm/kernel-rockchip/archive/$PKG_VERSION.tar.gz"
     PKG_SOURCE_NAME="linux-$LINUX-$PKG_VERSION.tar.gz"
     ;;
   raspberrypi)

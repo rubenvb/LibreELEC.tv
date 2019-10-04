@@ -2687,24 +2687,3 @@ Signed-off-by: Vinod Koul <vkoul@kernel.org>
  drivers/dma/pl330.c | 5 +++--
  1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index a25ab357b87c..5b0aef7d1f80 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -2209,13 +2209,14 @@ static int pl330_terminate_all(struct dma_chan *chan)
- 
- 	pm_runtime_get_sync(pl330->ddma.dev);
- 	spin_lock_irqsave(&pch->lock, flags);
-+
- 	spin_lock(&pl330->lock);
- 	_stop(pch->thread);
--	spin_unlock(&pl330->lock);
--
- 	pch->thread->req[0].desc = NULL;
- 	pch->thread->req[1].desc = NULL;
- 	pch->thread->req_running = -1;
-+	spin_unlock(&pl330->lock);
-+
- 	power_down = pch->active;
- 	pch->active = false;
- 

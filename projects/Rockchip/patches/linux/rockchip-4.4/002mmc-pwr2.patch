@@ -1,0 +1,66 @@
+From 01946788b015b9d3f7d18f5b4a43e09e6bf66623 Mon Sep 17 00:00:00 2001
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Date: Thu, 14 Apr 2016 14:02:14 +0100
+Subject: [PATCH] UPSTREAM: mmc: pwrseq_simple: add to_pwrseq_simple() macro
+
+This patch adds to_pwrseq_simple() macro to make the code more readable.
+
+Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+(cherry picked from commit 5b96fea730ab79bdf6f8071cadf8208296bf5e8d)
+---
+ drivers/mmc/core/pwrseq_simple.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/mmc/core/pwrseq_simple.c b/drivers/mmc/core/pwrseq_simple.c
+index bc173e18b71c..f94271bb1f6b 100644
+--- a/drivers/mmc/core/pwrseq_simple.c
++++ b/drivers/mmc/core/pwrseq_simple.c
+@@ -25,6 +25,8 @@ struct mmc_pwrseq_simple {
+ 	struct gpio_descs *reset_gpios;
+ };
+ 
++#define to_pwrseq_simple(p) container_of(p, struct mmc_pwrseq_simple, pwrseq)
++
+ static void mmc_pwrseq_simple_set_gpios_value(struct mmc_pwrseq_simple *pwrseq,
+ 					      int value)
+ {
+@@ -44,8 +46,7 @@ static void mmc_pwrseq_simple_set_gpios_value(struct mmc_pwrseq_simple *pwrseq,
+ 
+ static void mmc_pwrseq_simple_pre_power_on(struct mmc_host *host)
+ {
+-	struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
+-					struct mmc_pwrseq_simple, pwrseq);
++	struct mmc_pwrseq_simple *pwrseq = to_pwrseq_simple(host->pwrseq);
+ 
+ 	if (!IS_ERR(pwrseq->ext_clk) && !pwrseq->clk_enabled) {
+ 		clk_prepare_enable(pwrseq->ext_clk);
+@@ -57,16 +58,14 @@ static void mmc_pwrseq_simple_pre_power_on(struct mmc_host *host)
+ 
+ static void mmc_pwrseq_simple_post_power_on(struct mmc_host *host)
+ {
+-	struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
+-					struct mmc_pwrseq_simple, pwrseq);
++	struct mmc_pwrseq_simple *pwrseq = to_pwrseq_simple(host->pwrseq);
+ 
+ 	mmc_pwrseq_simple_set_gpios_value(pwrseq, 0);
+ }
+ 
+ static void mmc_pwrseq_simple_power_off(struct mmc_host *host)
+ {
+-	struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
+-					struct mmc_pwrseq_simple, pwrseq);
++	struct mmc_pwrseq_simple *pwrseq = to_pwrseq_simple(host->pwrseq);
+ 
+ 	mmc_pwrseq_simple_set_gpios_value(pwrseq, 1);
+ 
+@@ -78,8 +77,7 @@ static void mmc_pwrseq_simple_power_off(struct mmc_host *host)
+ 
+ static void mmc_pwrseq_simple_free(struct mmc_host *host)
+ {
+-	struct mmc_pwrseq_simple *pwrseq = container_of(host->pwrseq,
+-					struct mmc_pwrseq_simple, pwrseq);
++	struct mmc_pwrseq_simple *pwrseq = to_pwrseq_simple(host->pwrseq);
+ 
+ 	if (!IS_ERR(pwrseq->reset_gpios))
+ 		gpiod_put_array(pwrseq->reset_gpios);

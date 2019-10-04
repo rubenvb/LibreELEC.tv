@@ -1,0 +1,79 @@
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399.dtsi b/arch/arm64/boot/dts/rockchip/rk3399.dtsi
+index fbe3d0edc961..c415e2bfed02 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399.dtsi
+@@ -119,6 +119,7 @@
+ 			clocks = <&cru ARMCLKL>;
+ 			cpu-idle-states = <&CPU_SLEEP &CLUSTER_SLEEP>;
+ 			dynamic-power-coefficient = <100>;
++			capacity-dmips-mhz = <485>;
+ 		};
+ 
+ 		cpu_l1: cpu@1 {
+@@ -129,6 +130,7 @@
+ 			clocks = <&cru ARMCLKL>;
+ 			cpu-idle-states = <&CPU_SLEEP &CLUSTER_SLEEP>;
+ 			dynamic-power-coefficient = <100>;
++			capacity-dmips-mhz = <485>;
+ 		};
+ 
+ 		cpu_l2: cpu@2 {
+@@ -139,6 +141,7 @@
+ 			clocks = <&cru ARMCLKL>;
+ 			cpu-idle-states = <&CPU_SLEEP &CLUSTER_SLEEP>;
+ 			dynamic-power-coefficient = <100>;
++			capacity-dmips-mhz = <485>;
+ 		};
+ 
+ 		cpu_l3: cpu@3 {
+@@ -149,6 +152,7 @@
+ 			clocks = <&cru ARMCLKL>;
+ 			cpu-idle-states = <&CPU_SLEEP &CLUSTER_SLEEP>;
+ 			dynamic-power-coefficient = <100>;
++			capacity-dmips-mhz = <485>;
+ 		};
+ 
+ 		cpu_b0: cpu@100 {
+@@ -160,6 +164,7 @@
+ 			clocks = <&cru ARMCLKB>;
+ 			cpu-idle-states = <&CPU_SLEEP &CLUSTER_SLEEP>;
+ 			dynamic-power-coefficient = <436>;
++			capacity-dmips-mhz = <1024>;
+ 		};
+ 
+ 		cpu_b1: cpu@101 {
+@@ -170,6 +175,7 @@
+ 			clocks = <&cru ARMCLKB>;
+ 			cpu-idle-states = <&CPU_SLEEP &CLUSTER_SLEEP>;
+ 			dynamic-power-coefficient = <436>;
++			capacity-dmips-mhz = <1024>;
+ 		};
+ 
+ 		idle-states {
+@@ -804,7 +810,7 @@
+ 				};
+ 			};
+ 
+-			cooling-maps {
++			cooling_maps: cooling-maps {
+ 				map0 {
+ 					trip = <&target>;
+ 					cooling-device =
+@@ -1473,7 +1479,7 @@
+ 		cpu_id: cpu-id@7 {
+ 			reg = <0x07 0x10>;
+ 		};
+-		cpub_leakage: cpu-leakage@17 {
++		cpub_leakage: cpub-leakage@17 {
+ 			reg = <0x17 0x1>;
+ 		};
+ 		gpu_leakage: gpu-leakage@18 {
+@@ -1482,7 +1488,7 @@
+ 		center_leakage: center-leakage@19 {
+ 			reg = <0x19 0x1>;
+ 		};
+-		cpul_leakage: cpu-leakage@1a {
++		cpul_leakage: cpul-leakage@1a {
+ 			reg = <0x1a 0x1>;
+ 		};
+ 		logic_leakage: logic-leakage@1b {

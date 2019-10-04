@@ -1,0 +1,28 @@
+From 39e28982286908c712d788fc952a5ec4a4e98e3b Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 22 Jul 2018 15:09:16 +0200
+Subject: [PATCH] drm: bridge: dw-hdmi: signal full range for rgb output
+
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 0b61b5b6c75a..3cea04729fd6 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -1693,6 +1693,14 @@ static void hdmi_config_AVI(struct dw_hdmi *hdmi, struct drm_display_mode *mode)
+ 
+ 	frame.scan_mode = HDMI_SCAN_MODE_UNDERSCAN;
+ 
++	if (hdmi_bus_fmt_is_rgb(hdmi->hdmi_data.enc_out_bus_format)) {
++		frame.quantization_range = HDMI_QUANTIZATION_RANGE_FULL;
++		frame.ycc_quantization_range = HDMI_YCC_QUANTIZATION_RANGE_FULL;
++	} else {
++		frame.quantization_range = HDMI_QUANTIZATION_RANGE_LIMITED;
++		frame.ycc_quantization_range = HDMI_YCC_QUANTIZATION_RANGE_LIMITED;
++	}
++
+ 	/*
+ 	 * The Designware IP uses a different byte format from standard
+ 	 * AVI info frames, though generally the bits are in the correct

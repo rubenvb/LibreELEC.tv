@@ -1,0 +1,46 @@
+From 5a5f5ea8edcc75ca49961a458ac0380e60f30a4d Mon Sep 17 00:00:00 2001
+From: Jonas Karlman <jonas@kwiboo.se>
+Date: Sun, 21 Jan 2018 17:20:00 +0100
+Subject: [PATCH] drm: fix HDR metadata infoframe length
+
+HDR metadata infoframe length is 26 bytes (not 30) according to [1]
+(CTA-861-G: 6.9 Dynamic Range and Mastering InfoFrame)
+
+Fixes activation of HDR mode on my LG OLED
+
+[1] https://standards.cta.tech/kwspub/published_docs/CTA-861-G_FINAL_revised_2017.pdf
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 2 +-
+ drivers/gpu/drm/drm_edid.c                | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 30b6bd979eb8..ec002a4a7a7d 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -1857,7 +1857,7 @@ static void hdmi_config_hdr_infoframe(struct dw_hdmi *hdmi)
+ 		return;
+ 	}
+ 
+-	hdmi_writeb(hdmi, 1, HDMI_FC_DRM_HB0);
++	hdmi_writeb(hdmi, frame.version, HDMI_FC_DRM_HB0);
+ 	hdmi_writeb(hdmi, frame.length, HDMI_FC_DRM_HB1);
+ 	hdmi_writeb(hdmi, frame.eotf, HDMI_FC_DRM_PB0);
+ 	hdmi_writeb(hdmi, frame.metadata_type, HDMI_FC_DRM_PB1);
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index bfe671071d9f..e3a0f561e8f0 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -4735,10 +4735,10 @@ drm_hdmi_infoframe_set_hdr_metadata(struct hdmi_drm_infoframe *frame,
+ 
+ 	hdr_source_metadata = (struct hdr_static_metadata *)hdr_metadata;
+ 
+-	frame->length = sizeof(struct hdr_static_metadata);
++	frame->length = 26;
+ 
+ 	frame->eotf = hdr_source_metadata->eotf;
+-	frame->type = hdr_source_metadata->type;
++	frame->metadata_type = hdr_source_metadata->type;
+ 
+ 	for (i = 0; i < 3; i++) {
+ 		frame->display_primaries_x[i] =
