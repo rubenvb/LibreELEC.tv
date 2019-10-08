@@ -1,0 +1,607 @@
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c	2019-10-06 15:19:45.270338400 +0000
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi-i2s-audio.c	2019-10-06 15:43:13.093744200 +0000
+@@ -204,8 +204,12 @@
+ 
+ 	dw_hdmi_audio_disable(hdmi);
+ 
+-	hdmi_write(audio, HDMI_AUD_CONF0_SW_RESET, HDMI_AUD_CONF0);
+-	hdmi_write(audio, (u8)~HDMI_MC_SWRSTZ_I2S_RESET_MSK, HDMI_MC_SWRSTZ);
++	hdmi_update_bits(audio,
++			 HDMI_AUD_CONF0_SW_RESET,
++			 HDMI_AUD_CONF0_SW_RESET |
++				(HDMI_AUD_CONF0_I2S_ALL_ENABLE ^
++				 HDMI_AUD_CONF0_I2S_SELECT_MASK),
++			 HDMI_AUD_CONF0);
+ }
+ 
+ static int dw_hdmi_i2s_get_eld(struct device *dev, void *data, u8 *buf, size_t len)
+ 
+From 6c2bbfb0bd4950d2bc0b5909f94799b4ebf26e68 Mon Sep 17 00:00:00 2001
+From: Nickey Yang <nickey.yang@rock-chips.com>
+Date: Sat, 24 Aug 2019 17:45:53 +0800
+Subject: [PATCH 1144/1246] drm/bridge: synopsys: dw-hdmi: check hdmi status in  resume
+
+HDMI status maybe incorrect in the following condition:
+HDMI plug in -> system sleep ->  HDMI plug out -> system wake up.
+At this time, cat /sys/class/drm/card 0-HDMI-A-1/status is connected.
+There is no hpd interrupt, because HDMI is powerdown during suspend.
+So we need check the current HDMI status in this case.
+Test on rk3288 & rk3399.
+
+Change-Id: I2fbafd1d80b59628bca65e9e45760a24d1668241
+Signed-off-by: Nickey Yang <nickey.yang@rock-chips.com>
+---
+ drivers/gpu/drm/bridge/synopsys/dw-hdmi.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+index 8f7ae70e7190..1ddf9ce87bfb 100644
+--- a/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
++++ b/drivers/gpu/drm/bridge/synopsys/dw-hdmi.c
+@@ -3962,6 +3962,20 @@ void dw_hdmi_resume(struct device *dev)
+ 		dw_hdmi_i2c_init(hdmi);
+ 	if (hdmi->irq)
+ 		enable_irq(hdmi->irq);
++	/*
++	 * HDMI status maybe incorrect in the following condition:
++	 * HDMI plug in -> system sleep ->  HDMI plug out -> system wake up.
++	 * At this time, cat /sys/class/drm/card 0-HDMI-A-1/status is connected.
++	 * There is no hpd interrupt, because HDMI is powerdown during suspend.
++	 * So we need check the current HDMI status in this case.
++	 */
++	if (hdmi->connector.status == connector_status_connected)
++		if (hdmi->phy.ops->read_hpd(hdmi, hdmi->phy.data) ==
++		    connector_status_disconnected) {
++			hdmi->hpd_state = false;
++			mod_delayed_work(hdmi->workqueue, &hdmi->work,
++					 msecs_to_jiffies(20));
++		}
+ 	mutex_unlock(&hdmi->mutex);
+ }
+ EXPORT_SYMBOL_GPL(dw_hdmi_resume);
+
+From ce05fde82358377d92102332afc69be25f649280 Mon Sep 17 00:00:00 2001
+From: Sandy Huang <hjc@rock-chips.com>
+Date: Tue, 13 Aug 2019 09:58:54 +0800
+Subject: [PATCH 1119/1246] drm/rockchip: rgb: init eotf and color space for tv
+ output
+
+Change-Id: Ieb5891dbee664c4fe283db6f075a811be1b4bd25
+Signed-off-by: Sandy Huang <hjc@rock-chips.com>
+---
+ drivers/gpu/drm/rockchip/rockchip_rgb.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/gpu/drm/rockchip/rockchip_rgb.c b/drivers/gpu/drm/rockchip/rockchip_rgb.c
+index 04b04d7c67f8..0d28493e5b10 100644
+--- a/drivers/gpu/drm/rockchip/rockchip_rgb.c
++++ b/drivers/gpu/drm/rockchip/rockchip_rgb.c
+@@ -26,6 +26,7 @@
+ #include <linux/regmap.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/phy/phy.h>
++#include <uapi/linux/videodev2.h>
+ 
+ #include "rockchip_drm_drv.h"
+ #include "rockchip_drm_vop.h"
+@@ -194,6 +195,9 @@ rockchip_rgb_encoder_atomic_check(struct drm_encoder *encoder,
+ 	}
+ 
+ 	s->output_type = DRM_MODE_CONNECTOR_DPI;
++	s->tv_state = &conn_state->tv;
++	s->eotf = TRADITIONAL_GAMMA_SDR;
++	s->color_space = V4L2_COLORSPACE_DEFAULT;
+ 
+ 	return 0;
+ }
+
+From 3e8454859eaf0768ab99dd09f4bc1abd81732881 Mon Sep 17 00:00:00 2001
+From: Elaine Zhang <zhangqing@rock-chips.com>
+Date: Wed, 11 Sep 2019 09:21:45 +0800
+Subject: [PATCH 1191/1248] clk: rockchip: rk3399: fix up the FRAC_MAX_PRATE
+ limit for i2s and uart
+
+I2S and UART may be application requirements higher than 30M frequency,
+So increase the input frequency limit of the frac divider.
+IC back-end emulation 800M is safety.
+
+Change-Id: Ida63505b5124799ad8a64d70af4403eae121cbb8
+Signed-off-by: Elaine Zhang <zhangqing@rock-chips.com>
+---
+ drivers/clk/rockchip/clk-rk3399.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clk/rockchip/clk-rk3399.c b/drivers/clk/rockchip/clk-rk3399.c
+index 323d55d50ec6..3c41912c7081 100644
+--- a/drivers/clk/rockchip/clk-rk3399.c
++++ b/drivers/clk/rockchip/clk-rk3399.c
+@@ -21,8 +21,8 @@
+ #include <dt-bindings/clock/rk3399-cru.h>
+ #include "clk.h"
+ 
+-#define RK3399_I2S_FRAC_MAX_PRATE       600000000
+-#define RK3399_UART_FRAC_MAX_PRATE	600000000
++#define RK3399_I2S_FRAC_MAX_PRATE       800000000
++#define RK3399_UART_FRAC_MAX_PRATE	800000000
+ #define RK3399_SPDIF_FRAC_MAX_PRATE	600000000
+ #define RK3399_VOP_FRAC_MAX_PRATE	600000000
+ #define RK3399_WIFI_FRAC_MAX_PRATE	600000000
+ 
+From bfe0c355328ca726b0719ceb0bae05a352e325b8 Mon Sep 17 00:00:00 2001
+From: Elaine Zhang <zhangqing@rock-chips.com>
+Date: Wed, 28 Aug 2019 09:10:40 +0800
+Subject: [PATCH 1169/1248] clk: rockchip: add COMPOSITE_MUXTBL and MUXTBL  variant
+
+A clock branch consisting of a mux with non-standard
+select values.
+The parent in Mux table is sorted by priority.
+
+Change-Id: Ibcaa35541cf8bc255175a62c7950b2241aac2f55
+Signed-off-by: Elaine Zhang <zhangqing@rock-chips.com>
+---
+ drivers/clk/rockchip/clk.c | 29 +++++++++++++++++++++-------
+ drivers/clk/rockchip/clk.h | 39 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/clk/rockchip/clk.c b/drivers/clk/rockchip/clk.c
+index ffebcdf1636d..eb647474b5a1 100644
+--- a/drivers/clk/rockchip/clk.c
++++ b/drivers/clk/rockchip/clk.c
+@@ -44,7 +44,8 @@
+  */
+ static struct clk *rockchip_clk_register_branch(const char *name,
+ 		const char *const *parent_names, u8 num_parents, void __iomem *base,
+-		int muxdiv_offset, u8 mux_shift, u8 mux_width, u8 mux_flags,
++		int muxdiv_offset, u8 mux_shift, u8 mux_width,
++		u8 mux_flags, u32 *mux_table,
+ 		int div_offset, u8 div_shift, u8 div_width, u8 div_flags,
+ 		struct clk_div_table *div_table, int gate_offset,
+ 		u8 gate_shift, u8 gate_flags, unsigned long flags,
+@@ -66,6 +67,7 @@ static struct clk *rockchip_clk_register_branch(const char *name,
+ 		mux->shift = mux_shift;
+ 		mux->mask = BIT(mux_width) - 1;
+ 		mux->flags = mux_flags;
++		mux->table = mux_table;
+ 		mux->lock = lock;
+ 		mux_ops = (mux_flags & CLK_MUX_READ_ONLY) ? &clk_mux_ro_ops
+ 							: &clk_mux_ops;
+@@ -301,6 +303,8 @@ static struct clk *rockchip_clk_register_frac_branch(
+ 		frac_mux->shift = child->mux_shift;
+ 		frac_mux->mask = BIT(child->mux_width) - 1;
+ 		frac_mux->flags = child->mux_flags;
++		if (child->mux_table)
++			frac_mux->table = child->mux_table;
+ 		frac_mux->lock = lock;
+ 		frac_mux->hw.init = &init;
+ 
+@@ -482,11 +486,21 @@ void __init rockchip_clk_register_branches(
+ 		/* catch simple muxes */
+ 		switch (list->branch_type) {
+ 		case branch_mux:
+-			clk = clk_register_mux(NULL, list->name,
+-				list->parent_names, list->num_parents,
+-				flags, ctx->reg_base + list->muxdiv_offset,
+-				list->mux_shift, list->mux_width,
+-				list->mux_flags, &ctx->lock);
++			if (list->mux_table)
++				clk = clk_register_mux_table(NULL, list->name,
++					list->parent_names, list->num_parents,
++					flags,
++					ctx->reg_base + list->muxdiv_offset,
++					list->mux_shift, list->mux_width,
++					list->mux_flags, list->mux_table,
++					&ctx->lock);
++			else
++				clk = clk_register_mux(NULL, list->name,
++					list->parent_names, list->num_parents,
++					flags,
++					ctx->reg_base + list->muxdiv_offset,
++					list->mux_shift, list->mux_width,
++					list->mux_flags, &ctx->lock);
+ 			break;
+ 		case branch_muxgrf:
+ 			clk = rockchip_clk_register_muxgrf(list->name,
+@@ -548,7 +562,8 @@ void __init rockchip_clk_register_branches(
+ 				list->parent_names, list->num_parents,
+ 				ctx->reg_base, list->muxdiv_offset, list->mux_shift,
+ 				list->mux_width, list->mux_flags,
+-				list->div_offset, list->div_shift, list->div_width,
++				list->mux_table, list->div_offset,
++				list->div_shift, list->div_width,
+ 				list->div_flags, list->div_table,
+ 				list->gate_offset, list->gate_shift,
+ 				list->gate_flags, flags, &ctx->lock);
+diff --git a/drivers/clk/rockchip/clk.h b/drivers/clk/rockchip/clk.h
+index e4967565e521..4fd1f25b2533 100644
+--- a/drivers/clk/rockchip/clk.h
++++ b/drivers/clk/rockchip/clk.h
+@@ -476,6 +476,7 @@ struct rockchip_clk_branch {
+ 	u8				mux_shift;
+ 	u8				mux_width;
+ 	u8				mux_flags;
++	u32				*mux_table;
+ 	int				div_offset;
+ 	u8				div_shift;
+ 	u8				div_width;
+@@ -509,6 +510,28 @@ struct rockchip_clk_branch {
+ 		.gate_flags	= gf,				\
+ 	}
+ 
++#define COMPOSITE_MUXTBL(_id, cname, pnames, f, mo, ms, mw, mf,	\
++		 mt, ds, dw, df, go, gs, gf)			\
++	{							\
++		.id		= _id,				\
++		.branch_type	= branch_composite,		\
++		.name		= cname,			\
++		.parent_names	= pnames,			\
++		.num_parents	= ARRAY_SIZE(pnames),		\
++		.flags		= f,				\
++		.muxdiv_offset	= mo,				\
++		.mux_shift	= ms,				\
++		.mux_width	= mw,				\
++		.mux_flags	= mf,				\
++		.mux_table	= mt,				\
++		.div_shift	= ds,				\
++		.div_width	= dw,				\
++		.div_flags	= df,				\
++		.gate_offset	= go,				\
++		.gate_shift	= gs,				\
++		.gate_flags	= gf,				\
++	}
++
+ #define COMPOSITE_DIV_OFFSET(_id, cname, pnames, f, mo, ms, mw,	\
+ 			     mf, do, ds, dw, df, go, gs, gf)	\
+ 	{							\
+@@ -712,6 +735,22 @@ struct rockchip_clk_branch {
+ 		.gate_offset	= -1,				\
+ 	}
+ 
++#define MUXTBL(_id, cname, pnames, f, o, s, w, mf, mt)		\
++	{							\
++		.id		= _id,				\
++		.branch_type	= branch_mux,			\
++		.name		= cname,			\
++		.parent_names	= pnames,			\
++		.num_parents	= ARRAY_SIZE(pnames),		\
++		.flags		= f,				\
++		.muxdiv_offset	= o,				\
++		.mux_shift	= s,				\
++		.mux_width	= w,				\
++		.mux_flags	= mf,				\
++		.gate_offset	= -1,				\
++		.mux_table	= mt,				\
++	}
++
+ #define MUXGRF(_id, cname, pnames, f, o, s, w, mf)		\
+ 	{							\
+ 		.id		= _id,				\
+ 
+From 7cac5616c2296975a3fae91aab05f365be45c22a Mon Sep 17 00:00:00 2001
+From: Elaine Zhang <zhangqing@rock-chips.com>
+Date: Wed, 28 Aug 2019 09:52:27 +0800
+Subject: [PATCH 1171/1248] clk: rockchip: rk3399: Use MUXTBL to cover Mux
+ selects priorities
+
+add CLK_SET_RATE_PARENT for clk_uartx_frac.
+
+Change-Id: Ide6eab4bd76b9900a8a55f2dc3c79563fc8feda3
+Signed-off-by: Elaine Zhang <zhangqing@rock-chips.com>
+---
+ drivers/clk/rockchip/clk-rk3399.c | 44 ++++++++++++++++---------------
+ 1 file changed, 23 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/clk/rockchip/clk-rk3399.c b/drivers/clk/rockchip/clk-rk3399.c
+index e15fdfa84c52..323d55d50ec6 100644
+--- a/drivers/clk/rockchip/clk-rk3399.c
++++ b/drivers/clk/rockchip/clk-rk3399.c
+@@ -294,20 +294,22 @@ PNAME(mux_i2sch_p)			= { "clk_i2s0", "clk_i2s1",
+ 					    "clk_i2s2" };
+ PNAME(mux_i2sout_p)			= { "clk_i2sout_src", "xin12m" };
+ 
+-PNAME(mux_uart0_p)	= { "clk_uart0_div", "clk_uart0_frac", "xin24m" };
+-PNAME(mux_uart1_p)	= { "clk_uart1_div", "clk_uart1_frac", "xin24m" };
+-PNAME(mux_uart2_p)	= { "clk_uart2_div", "clk_uart2_frac", "xin24m" };
+-PNAME(mux_uart3_p)	= { "clk_uart3_div", "clk_uart3_frac", "xin24m" };
++PNAME(mux_uart0_p)			= { "xin24m", "clk_uart0_div", "clk_uart0_frac" };
++PNAME(mux_uart1_p)			= { "xin24m", "clk_uart1_div", "clk_uart1_frac" };
++PNAME(mux_uart2_p)			= { "xin24m", "clk_uart2_div", "clk_uart2_frac" };
++PNAME(mux_uart3_p)			= { "xin24m", "clk_uart3_div", "clk_uart3_frac" };
+ 
+ /* PMU CRU parents */
+ PNAME(mux_ppll_24m_p)		= { "ppll", "xin24m" };
+ PNAME(mux_24m_ppll_p)		= { "xin24m", "ppll" };
+ PNAME(mux_fclk_cm0s_pmu_ppll_p)	= { "fclk_cm0s_pmu_ppll_src", "xin24m" };
+ PNAME(mux_wifi_pmu_p)		= { "clk_wifi_div", "clk_wifi_frac" };
+-PNAME(mux_uart4_pmu_p)		= { "clk_uart4_div", "clk_uart4_frac",
+-				    "xin24m" };
++PNAME(mux_uart4_pmu_p)		= { "xin24m", "clk_uart4_div",
++				    "clk_uart4_frac" };
+ PNAME(mux_clk_testout2_2io_p)	= { "clk_testout2", "clk_32k_suspend_pmu" };
+ 
++static u32 uart_mux_idx[]	= { 2, 0, 1 };
++
+ static struct rockchip_pll_clock rk3399_pll_clks[] __initdata = {
+ 	[lpll] = PLL(pll_rk3399, PLL_APLLL, "lpll", mux_pll_p, 0, RK3399_PLL_CON(0),
+ 		     RK3399_PLL_CON(3), 8, 31, 0, rk3399_pll_rates),
+@@ -357,24 +359,24 @@ static struct rockchip_clk_branch rk3399_i2s2_fracmux __initdata =
+ 			RK3399_CLKSEL_CON(30), 8, 2, MFLAGS);
+ 
+ static struct rockchip_clk_branch rk3399_uart0_fracmux __initdata =
+-	MUX(SCLK_UART0, "clk_uart0", mux_uart0_p, CLK_SET_RATE_PARENT,
+-			RK3399_CLKSEL_CON(33), 8, 2, MFLAGS);
++	MUXTBL(SCLK_UART0, "clk_uart0", mux_uart0_p, CLK_SET_RATE_PARENT,
++			RK3399_CLKSEL_CON(33), 8, 2, MFLAGS, uart_mux_idx);
+ 
+ static struct rockchip_clk_branch rk3399_uart1_fracmux __initdata =
+-	MUX(SCLK_UART1, "clk_uart1", mux_uart1_p, CLK_SET_RATE_PARENT,
+-			RK3399_CLKSEL_CON(34), 8, 2, MFLAGS);
++	MUXTBL(SCLK_UART1, "clk_uart1", mux_uart1_p, CLK_SET_RATE_PARENT,
++			RK3399_CLKSEL_CON(34), 8, 2, MFLAGS, uart_mux_idx);
+ 
+ static struct rockchip_clk_branch rk3399_uart2_fracmux __initdata =
+-	MUX(SCLK_UART2, "clk_uart2", mux_uart2_p, CLK_SET_RATE_PARENT,
+-			RK3399_CLKSEL_CON(35), 8, 2, MFLAGS);
++	MUXTBL(SCLK_UART2, "clk_uart2", mux_uart2_p, CLK_SET_RATE_PARENT,
++			RK3399_CLKSEL_CON(35), 8, 2, MFLAGS, uart_mux_idx);
+ 
+ static struct rockchip_clk_branch rk3399_uart3_fracmux __initdata =
+-	MUX(SCLK_UART3, "clk_uart3", mux_uart3_p, CLK_SET_RATE_PARENT,
+-			RK3399_CLKSEL_CON(36), 8, 2, MFLAGS);
++	MUXTBL(SCLK_UART3, "clk_uart3", mux_uart3_p, CLK_SET_RATE_PARENT,
++			RK3399_CLKSEL_CON(36), 8, 2, MFLAGS, uart_mux_idx);
+ 
+ static struct rockchip_clk_branch rk3399_uart4_pmu_fracmux __initdata =
+-	MUX(SCLK_UART4_PMU, "clk_uart4_pmu", mux_uart4_pmu_p, CLK_SET_RATE_PARENT,
+-			RK3399_PMU_CLKSEL_CON(5), 8, 2, MFLAGS);
++	MUXTBL(SCLK_UART4_PMU, "clk_uart4_pmu", mux_uart4_pmu_p, CLK_SET_RATE_PARENT,
++			RK3399_PMU_CLKSEL_CON(5), 8, 2, MFLAGS, uart_mux_idx);
+ 
+ static struct rockchip_clk_branch rk3399_dclk_vop0_fracmux __initdata =
+ 	MUX(DCLK_VOP0, "dclk_vop0", mux_dclk_vop0_p, CLK_SET_RATE_PARENT | CLK_KEEP_REQ_RATE,
+@@ -732,7 +734,7 @@ static struct rockchip_clk_branch rk3399_clk_branches[] __initdata = {
+ 	COMPOSITE_NOMUX(0, "clk_uart0_div", "clk_uart0_src", 0,
+ 			RK3399_CLKSEL_CON(33), 0, 7, DFLAGS,
+ 			RK3399_CLKGATE_CON(9), 0, GFLAGS),
+-	COMPOSITE_FRACMUX(0, "clk_uart0_frac", "clk_uart0_div", 0,
++	COMPOSITE_FRACMUX(0, "clk_uart0_frac", "clk_uart0_div", CLK_SET_RATE_PARENT,
+ 			RK3399_CLKSEL_CON(100), 0,
+ 			RK3399_CLKGATE_CON(9), 1, GFLAGS,
+ 			&rk3399_uart0_fracmux, RK3399_UART_FRAC_MAX_PRATE),
+@@ -750,7 +752,7 @@ static struct rockchip_clk_branch rk3399_clk_branches[] __initdata = {
+ 	COMPOSITE_NOMUX(0, "clk_uart2_div", "clk_uart_src", 0,
+ 			RK3399_CLKSEL_CON(35), 0, 7, DFLAGS,
+ 			RK3399_CLKGATE_CON(9), 4, GFLAGS),
+-	COMPOSITE_FRACMUX(0, "clk_uart2_frac", "clk_uart2_div", 0,
++	COMPOSITE_FRACMUX(0, "clk_uart2_frac", "clk_uart2_div", CLK_SET_RATE_PARENT,
+ 			RK3399_CLKSEL_CON(102), 0,
+ 			RK3399_CLKGATE_CON(9), 5, GFLAGS,
+ 			&rk3399_uart2_fracmux, RK3399_UART_FRAC_MAX_PRATE),
+@@ -758,7 +760,7 @@ static struct rockchip_clk_branch rk3399_clk_branches[] __initdata = {
+ 	COMPOSITE_NOMUX(0, "clk_uart3_div", "clk_uart_src", 0,
+ 			RK3399_CLKSEL_CON(36), 0, 7, DFLAGS,
+ 			RK3399_CLKGATE_CON(9), 6, GFLAGS),
+-	COMPOSITE_FRACMUX(0, "clk_uart3_frac", "clk_uart3_div", 0,
++	COMPOSITE_FRACMUX(0, "clk_uart3_frac", "clk_uart3_div", CLK_SET_RATE_PARENT,
+ 			RK3399_CLKSEL_CON(103), 0,
+ 			RK3399_CLKGATE_CON(9), 7, GFLAGS,
+ 			&rk3399_uart3_fracmux, RK3399_UART_FRAC_MAX_PRATE),
+@@ -1524,7 +1526,7 @@ static struct rockchip_clk_branch rk3399_clk_pmu_branches[] __initdata = {
+ 			RK3399_PMU_CLKSEL_CON(1), 13, 1, MFLAGS, 8, 5, DFLAGS,
+ 			RK3399_PMU_CLKGATE_CON(0), 8, GFLAGS),
+ 
+-	COMPOSITE_FRACMUX_NOGATE(0, "clk_wifi_frac", "clk_wifi_div", 0,
++	COMPOSITE_FRACMUX_NOGATE(0, "clk_wifi_frac", "clk_wifi_div", CLK_SET_RATE_PARENT,
+ 			RK3399_PMU_CLKSEL_CON(7), 0,
+ 			&rk3399_pmuclk_wifi_fracmux, RK3399_WIFI_FRAC_MAX_PRATE),
+ 
+@@ -1555,7 +1557,7 @@ static struct rockchip_clk_branch rk3399_clk_pmu_branches[] __initdata = {
+ 			RK3399_PMU_CLKSEL_CON(5), 0, 7, DFLAGS,
+ 			RK3399_PMU_CLKGATE_CON(0), 5, GFLAGS),
+ 
+-	COMPOSITE_FRACMUX(0, "clk_uart4_frac", "clk_uart4_div", 0,
++	COMPOSITE_FRACMUX(0, "clk_uart4_frac", "clk_uart4_div", CLK_SET_RATE_PARENT,
+ 			RK3399_PMU_CLKSEL_CON(6), 0,
+ 			RK3399_PMU_CLKGATE_CON(0), 6, GFLAGS,
+ 			&rk3399_uart4_pmu_fracmux, RK3399_UART_FRAC_MAX_PRATE),
+
+From f0cfa849478ff45273a211607b34d16ae17dc1bd Mon Sep 17 00:00:00 2001
+From: Ulf Hansson <ulf.hansson@linaro.org>
+Date: Tue, 27 Aug 2019 10:10:43 +0200
+Subject: [PATCH 1159/1248] UPSTREAM: mmc: core: Fix init of SD cards reporting
+ an invalid VDD range
+
+The OCR register defines the supported range of VDD voltages for SD cards.
+However, it has turned out that some SD cards reports an invalid voltage
+range, for example having bit7 set.
+
+When a host supports MMC_CAP2_FULL_PWR_CYCLE and some of the voltages from
+the invalid VDD range, this triggers the core to run a power cycle of the
+card to try to initialize it at the lowest common supported voltage.
+Obviously this fails, since the card can't support it.
+
+Let's fix this problem, by clearing invalid bits from the read OCR register
+for SD cards, before proceeding with the VDD voltage negotiation.
+
+Change-Id: I23c224b59505e747e4156f7ddaf0c26630b3f6a4
+Cc: stable@vger.kernel.org
+Reported-by: Philip Langdale <philipl@overt.org>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Reviewed-by: Philip Langdale <philipl@overt.org>
+Tested-by: Philip Langdale <philipl@overt.org>
+Signed-off-by: Shawn Lin <shawn.lin@rock-chips.com>
+(cherry picked from commit 72741084d903e65e121c27bd29494d941729d4a1)
+---
+ drivers/mmc/core/sd.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/mmc/core/sd.c b/drivers/mmc/core/sd.c
+index 6437f1c253e6..2358483395bf 100644
+--- a/drivers/mmc/core/sd.c
++++ b/drivers/mmc/core/sd.c
+@@ -1386,6 +1386,12 @@ int mmc_attach_sd(struct mmc_host *host)
+ 			goto err;
+ 	}
+ 
++	/*
++	 * Some SD cards claims an out of spec VDD voltage range. Let's treat
++	 * these bits as being in-valid and especially also bit7.
++	 */
++	ocr &= ~0x7FFF;
++
+ 	rocr = mmc_select_voltage(host, ocr);
+ 
+ 	/*
+
+From b8cab158943d9f43a971de7312d31f8656e65b6d Mon Sep 17 00:00:00 2001
+From: Shixiang Zheng <shixiang.zheng@rock-chips.com>
+Date: Mon, 26 Aug 2019 08:55:39 +0800
+Subject: [PATCH 1143/1248] video/rockchip: rga2: fix rga_dma_flush_page crash
+ issue
+
+Unable to handle kernel paging request at virtual address
+ffffffc000000000
+PC is at __dma_flush_range+0x18/0x30
+LR is at rga_dma_flush_page+0x40/0x48
+
+Change-Id: I6c15bc60edac042884ad14611485f0380e3bd355
+Signed-off-by: Shixiang Zheng <shixiang.zheng@rock-chips.com>
+---
+ drivers/video/rockchip/rga2/rga2_mmu_info.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/video/rockchip/rga2/rga2_mmu_info.c b/drivers/video/rockchip/rga2/rga2_mmu_info.c
+index 7836a6c50c81..95b914fc01ef 100644
+--- a/drivers/video/rockchip/rga2/rga2_mmu_info.c
++++ b/drivers/video/rockchip/rga2/rga2_mmu_info.c
+@@ -481,7 +481,7 @@ static int rga2_MapUserMemory(struct page **pages, uint32_t *pageTable,
+ 		pte = pte_offset_map_lock(current->mm, pmd,
+ 					  (Memory + i) << PAGE_SHIFT,
+ 					  &ptl);
+-		if (!pte) {
++		if (pte_none(*pte)) {
+ 			pr_err("RGA2 failed to get pte\n");
+ 			pte_unmap_unlock(pte, ptl);
+ 			status = RGA2_OUT_OF_RESOURCES;
+@@ -490,9 +490,9 @@ static int rga2_MapUserMemory(struct page **pages, uint32_t *pageTable,
+ 		pfn = pte_pfn(*pte);
+ 		Address = ((pfn << PAGE_SHIFT) | (((unsigned long)((Memory + i)
+ 			   << PAGE_SHIFT)) & ~PAGE_MASK));
+-		pte_unmap_unlock(pte, ptl);
+ 		pageTable[i] = (uint32_t)Address;
+ 		rga_dma_flush_page(pfn_to_page(pfn));
++		pte_unmap_unlock(pte, ptl);
+ 	}
+ 	up_read(&current->mm->mmap_sem);
+ 	return status;
+
+From e0fd32f897c5924761cf054b6611d42690b7d3e7 Mon Sep 17 00:00:00 2001
+From: Weixin Zhou <zwx@rock-chips.com>
+Date: Wed, 21 Aug 2019 17:20:46 +0800
+Subject: [PATCH 1140/1248] PCI: rockchip: DW PCIe adjust the link status check
+ to per 1ms
+
+Change-Id: Ie29c73a49073001825c1b5746bdbb1b06ca1d3a9
+Signed-off-by: Weixin Zhou <zwx@rock-chips.com>
+---
+ drivers/pci/host/pcie-dw-rockchip.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/host/pcie-dw-rockchip.c b/drivers/pci/host/pcie-dw-rockchip.c
+index 22c7a560b920..2d7b937ae9b0 100644
+--- a/drivers/pci/host/pcie-dw-rockchip.c
++++ b/drivers/pci/host/pcie-dw-rockchip.c
+@@ -624,14 +624,14 @@ static int rk_pcie_establish_link(struct rk_pcie *rk_pcie)
+ 	/* Enable LTSSM */
+ 	rk_pcie_enable_ltssm(rk_pcie);
+ 
+-	for (retries = 0; retries < 1000; retries++) {
++	for (retries = 0; retries < 1000000; retries++) {
+ 		if (rk_pcie_link_up(rk_pcie)) {
+ 			dev_info(rk_pcie->dev, "PCIe Link up\n");
+ 			return 0;
+ 		}
+ 
+-		dev_info(rk_pcie->dev, "PCIe Linking...\n");
+-		mdelay(1000);
++		dev_info_ratelimited(rk_pcie->dev, "PCIe Linking...\n");
++		mdelay(1);
+ 	}
+ 
+ 	dev_err(rk_pcie->dev, "PCIe Link Fail\n");
+
+	From 573e63b2c33b239a9400c975cafbf3c84616e282 Mon Sep 17 00:00:00 2001
+From: Sugar Zhang <sugar.zhang@rock-chips.com>
+Date: Tue, 20 Aug 2019 14:25:45 +0800
+Subject: [PATCH 1134/1248] ASoC: rockchip: i2s: Adds properties to specify
+ playback/capture capability
+
+- 'rockchip,playback-only': support playback only.
+- 'rockchip,capture-only': support capture only.
+
+Change-Id: I0daee4dc5bda8bacc63201972b57c8d401fb8703
+Signed-off-by: Sugar Zhang <sugar.zhang@rock-chips.com>
+---
+ Documentation/devicetree/bindings/sound/rockchip,i2s-tdm.txt | 2 ++
+ Documentation/devicetree/bindings/sound/rockchip-i2s.txt     | 2 ++
+ sound/soc/rockchip/rockchip_i2s.c                            | 5 +++++
+ sound/soc/rockchip/rockchip_i2s_tdm.c                        | 5 +++++
+ 4 files changed, 14 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/sound/rockchip,i2s-tdm.txt b/Documentation/devicetree/bindings/sound/rockchip,i2s-tdm.txt
+index c4fcbe501885..2e0eb5bb443e 100644
+--- a/Documentation/devicetree/bindings/sound/rockchip,i2s-tdm.txt
++++ b/Documentation/devicetree/bindings/sound/rockchip,i2s-tdm.txt
+@@ -30,6 +30,8 @@ Required properties:
+   register pcm dmaengine, only just register dai. if the dai is part of multi-dais,
+   the property should be present. Please refer to rockchip,multidais.txt about
+   multi-dais usage.
++- rockchip,playback-only: Specify that the controller only has playback capability.
++- rockchip,capture-only: Specify that the controller only has capture capability.
+ 
+ Optional properties:
+ - rockchip,i2s-rx-route: This is a variable length array, that shows the mapping
+diff --git a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
+index fd6a05bcc014..3eb7663f9fe7 100644
+--- a/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
++++ b/Documentation/devicetree/bindings/sound/rockchip-i2s.txt
+@@ -41,6 +41,8 @@ Required properties:
+   register pcm dmaengine, only just register dai. if the dai is part of multi-dais,
+   the property should be present. Please refer to rockchip,multidais.txt about
+   multi-dais usage.
++- rockchip,playback-only: Specify that the controller only has playback capability.
++- rockchip,capture-only: Specify that the controller only has capture capability.
+ 
+ Required properties for controller which support multi channels
+ playback/capture:
+diff --git a/sound/soc/rockchip/rockchip_i2s.c b/sound/soc/rockchip/rockchip_i2s.c
+index e48b8b19fc34..e5e95611f7fb 100644
+--- a/sound/soc/rockchip/rockchip_i2s.c
++++ b/sound/soc/rockchip/rockchip_i2s.c
+@@ -705,6 +705,11 @@ static int rockchip_i2s_probe(struct platform_device *pdev)
+ 			soc_dai->capture.channels_max = val;
+ 	}
+ 
++	if (of_property_read_bool(node, "rockchip,playback-only"))
++		soc_dai->capture.channels_min = 0;
++	else if (of_property_read_bool(node, "rockchip,capture-only"))
++		soc_dai->playback.channels_min = 0;
++
+ 	i2s->bclk_fs = 64;
+ 	if (!of_property_read_u32(node, "rockchip,bclk-fs", &val)) {
+ 		if ((val >= 32) && (val % 2 == 0))
+diff --git a/sound/soc/rockchip/rockchip_i2s_tdm.c b/sound/soc/rockchip/rockchip_i2s_tdm.c
+index ad2aaec71cc4..c2c9812db275 100644
+--- a/sound/soc/rockchip/rockchip_i2s_tdm.c
++++ b/sound/soc/rockchip/rockchip_i2s_tdm.c
+@@ -1484,6 +1484,11 @@ static int rockchip_i2s_tdm_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	if (of_property_read_bool(node, "rockchip,playback-only"))
++		soc_dai->capture.channels_min = 0;
++	else if (of_property_read_bool(node, "rockchip,capture-only"))
++		soc_dai->playback.channels_min = 0;
++
+ 	i2s_tdm->grf = syscon_regmap_lookup_by_phandle(node, "rockchip,grf");
+ 	if (IS_ERR(i2s_tdm->grf))
+ 		return PTR_ERR(i2s_tdm->grf);

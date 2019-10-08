@@ -44,11 +44,12 @@ devices = {
     },
     'RK3399' : {
 	  'nanopct4' : { 'dtb' : 'rk3399-nanopi4-rev00.dtb', 'config' : 'evb-rk3399_config' },
+	  'nanopim4' : { 'dtb' : 'rk3399-nanopi4-rev01.dtb', 'config' : 'evb-rk3399_config' },
+	  'nanopim4-2' : { 'dtb' : 'rk3399-nanopi4-rev21.dtb', 'config' : 'evb-rk3399_config' },
       'khadas-edge' : { 'dtb' : 'rk3399-khadas-edge.dtb', 'config' : 'evb-rk3399_config' },
       'rock960' : { 'dtb' : 'rk3399-rock960.dtb', 'config' : 'evb-rk3399_config' },
       'rock-pi-4' : { 'dtb' : 'rk3399-rock-pi-4.dtb', 'config' : 'evb-rk3399_config' },
       'rockpro64' : { 'dtb' : 'rk3399-rockpro64.dtb', 'config' : 'evb-rk3399_config' },
-      'sapphire' : { 'dtb' : 'rk3399-sapphire.dtb', 'config' : 'evb-rk3399_config' },
     },
     'TinkerBoard' : { 'rk3288' : { 'dtb' : 'rk3288-miniarm.dtb', 'config' : 'tinker-rk3288_config' }, },
   },
