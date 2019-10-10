@@ -605,3 +605,216 @@ index ad2aaec71cc4..c2c9812db275 100644
  	i2s_tdm->grf = syscon_regmap_lookup_by_phandle(node, "rockchip,grf");
  	if (IS_ERR(i2s_tdm->grf))
  		return PTR_ERR(i2s_tdm->grf);
+
+From 5d1491b311dd57cb5ca752185876e92a2ea49d37 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Kamil=20Trzci=C5=84ski?= <ayufan@ayufan.eu>
+Date: Tue, 18 Jun 2019 17:52:17 +0200
+Subject: [PATCH 120/176] ayufan: rockchip-hdmi-dp: register HDMI Jack
+
+---
+ sound/soc/rockchip/rockchip_hdmi_dp.c | 35 +++++++++++++++++++++++++--
+ 1 file changed, 33 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/rockchip/rockchip_hdmi_dp.c b/sound/soc/rockchip/rockchip_hdmi_dp.c
+index 4db9fb7b7dae..81b1cf3e286c 100644
+--- a/sound/soc/rockchip/rockchip_hdmi_dp.c
++++ b/sound/soc/rockchip/rockchip_hdmi_dp.c
+@@ -23,6 +23,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/slab.h>
+ #include <sound/core.h>
++#include <sound/jack.h>
++#include <sound/hdmi-codec.h>
+ #include <sound/pcm.h>
+ #include <sound/pcm_params.h>
+ #include <sound/soc.h>
+@@ -78,14 +80,43 @@ static int rk_hdmi_dp_hw_params(struct snd_pcm_substream *substream,
+ 	return 0;
+ }
+ 
+-static struct snd_soc_ops rk_ops = {
++static struct snd_soc_jack hdmi_dp_card_jack;
++
++static int rockchip_sound_hdmi_dp_init(struct snd_soc_pcm_runtime *runtime)
++{
++	struct snd_soc_card *card = runtime->card;
++	int i;
++	int ret;
++
++	/* enable jack detection */
++	ret = snd_soc_card_jack_new(card, "HDMI Jack", SND_JACK_LINEOUT,
++				    &hdmi_dp_card_jack, NULL, 0);
++	if (ret) {
++		dev_err(card->dev, "Can't create HDMI Jack %d\n", ret);
++		return ret;
++	}
++
++	for (i = 0; i < runtime->num_codecs; ++i) {
++		struct snd_soc_codec *codec = runtime->codec_dais[i]->codec;
++
++		ret = hdmi_codec_set_jack_detect(codec, &hdmi_dp_card_jack);
++		if (ret) {
++			dev_warn(codec->dev, "Failed to register HDMI Jack %d\n", ret);
++		}
++	}
++
++	return 0;
++}
++
++static struct snd_soc_ops rockchip_sound_hdmidp_ops = {
+ 	.hw_params = rk_hdmi_dp_hw_params,
+ };
+ 
+ static struct snd_soc_dai_link rk_dailink = {
+ 	.name = "HDMI-DP",
+ 	.stream_name = "HDMI-DP",
+-	.ops = &rk_ops,
++	.init = rockchip_sound_hdmi_dp_init,
++	.ops = &rockchip_sound_hdmidp_ops,
+ 	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
+ 		SND_SOC_DAIFMT_CBS_CFS,
+ };
+ 
+From ed402e2155cf02e9a1e37ca6d8a3f2a3ac7a9add Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Kamil=20Trzci=C5=84ski?= <ayufan@ayufan.eu>
+Date: Wed, 19 Jun 2019 12:44:29 +0200
+Subject: [PATCH 133/176] ayufan: hdmi-codec: register notifier as early as
+ possible
+
+---
+ sound/soc/codecs/hdmi-codec.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/sound/soc/codecs/hdmi-codec.c b/sound/soc/codecs/hdmi-codec.c
+index 028d60c196ae..12dc5dd539fc 100644
+--- a/sound/soc/codecs/hdmi-codec.c
++++ b/sound/soc/codecs/hdmi-codec.c
+@@ -416,11 +416,11 @@ static struct snd_soc_codec_driver hdmi_codec = {
+ static void hdmi_codec_jack_report(struct hdmi_codec_priv *hcp,
+ 				   unsigned int jack_status)
+ {
+-	if (!hcp->jack)
+-		return;
+-
+ 	if (jack_status != hcp->jack_status) {
+-		snd_soc_jack_report(hcp->jack, jack_status, SND_JACK_LINEOUT);
++		if (hcp->jack) {
++			snd_soc_jack_report(hcp->jack, jack_status, SND_JACK_LINEOUT);
++		}
++
+ 		hcp->jack_status = jack_status;
+ 	}
+ }
+@@ -435,9 +435,6 @@ static int hdmi_codec_notify(struct notifier_block *nb, unsigned long event,
+ 	if (hcp->dev->parent != event_block->base.source)
+ 		return NOTIFY_OK;
+ 
+-	if (!hcp->jack)
+-		return NOTIFY_OK;
+-
+ 	switch (event) {
+ 	case HDMI_CONNECTED:
+ 		hdmi_codec_jack_report(hcp, SND_JACK_LINEOUT);
+@@ -462,9 +459,8 @@ int hdmi_codec_set_jack_detect(struct snd_soc_codec *codec,
+ 	struct hdmi_codec_priv *hcp = snd_soc_codec_get_drvdata(codec);
+ 
+ 	hcp->jack = jack;
+-	hcp->nb.notifier_call = hdmi_codec_notify;
+ 
+-	hdmi_register_notifier(&hcp->nb);
++	snd_soc_jack_report(jack, hcp->jack_status, SND_JACK_LINEOUT);
+ 
+ 	return 0;
+ }
+@@ -527,6 +523,9 @@ static int hdmi_codec_probe(struct platform_device *pdev)
+ 
+ 	hcp->dev = dev;
+ 
++	hcp->nb.notifier_call = hdmi_codec_notify;
++	hdmi_register_notifier(&hcp->nb);
++
+ 	return 0;
+ }
+ 
+From c150cdc3b51fa295e5fa693fbed8f2d9f2a5ef08 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Kamil=20Trzci=C5=84ski?= <ayufan@ayufan.eu>
+Date: Thu, 20 Jun 2019 12:09:36 +0200
+Subject: [PATCH 134/176] ayufan: rockchip-hdmi-dp: fix register jacks
+
+---
+ sound/soc/rockchip/rockchip_hdmi_dp.c | 50 +++++++++++++++++++++------
+ 1 file changed, 40 insertions(+), 10 deletions(-)
+
+diff --git a/sound/soc/rockchip/rockchip_hdmi_dp.c b/sound/soc/rockchip/rockchip_hdmi_dp.c
+index 81b1cf3e286c..465a9c54c422 100644
+--- a/sound/soc/rockchip/rockchip_hdmi_dp.c
++++ b/sound/soc/rockchip/rockchip_hdmi_dp.c
+@@ -80,28 +80,58 @@ static int rk_hdmi_dp_hw_params(struct snd_pcm_substream *substream,
+ 	return 0;
+ }
+ 
+-static struct snd_soc_jack hdmi_dp_card_jack;
+-
+-static int rockchip_sound_hdmi_dp_init(struct snd_soc_pcm_runtime *runtime)
++static int rockchip_sound_register_jack(struct snd_soc_card *card, struct snd_soc_codec *codec, int index)
+ {
+-	struct snd_soc_card *card = runtime->card;
+-	int i;
++	struct snd_soc_jack *jack;
++	char jack_name[60];
++	const char *dev_name = NULL;
+ 	int ret;
+ 
+-	/* enable jack detection */
+-	ret = snd_soc_card_jack_new(card, "HDMI Jack", SND_JACK_LINEOUT,
+-				    &hdmi_dp_card_jack, NULL, 0);
++	jack = devm_kzalloc(card->dev, sizeof(*jack), GFP_KERNEL);
++	if (!jack) {
++		dev_err(card->dev, "Can't allocate HDMI Jack %d\n", ret);
++		return -ENOMEM;
++	}
++
++	if (codec->dev->parent && codec->dev->parent->of_node) {
++		dev_name = of_node_full_name(codec->dev->parent->of_node);
++	}
++
++	if (dev_name) {
++		snprintf(jack_name, sizeof(jack_name), "%s Jack", dev_name);
++	} else {
++		snprintf(jack_name, sizeof(jack_name), "Codec %d Jack", index);
++	}
++
++	ret = snd_soc_card_jack_new(card, jack_name, SND_JACK_LINEOUT,
++						jack, NULL, 0);
+ 	if (ret) {
+ 		dev_err(card->dev, "Can't create HDMI Jack %d\n", ret);
+ 		return ret;
+ 	}
+ 
++	ret = hdmi_codec_set_jack_detect(codec, jack);
++	if (ret) {
++		dev_warn(codec->dev, "Failed to register HDMI Jack %d\n", ret);
++		ret = 0;
++	}
++
++	return ret;
++}
++
++static int rockchip_sound_hdmi_dp_init(struct snd_soc_pcm_runtime *runtime)
++{
++	struct snd_soc_card *card = runtime->card;
++	int i;
++	int ret;
++
+ 	for (i = 0; i < runtime->num_codecs; ++i) {
+ 		struct snd_soc_codec *codec = runtime->codec_dais[i]->codec;
+ 
+-		ret = hdmi_codec_set_jack_detect(codec, &hdmi_dp_card_jack);
++		ret = rockchip_sound_register_jack(card, codec, i);
+ 		if (ret) {
+-			dev_warn(codec->dev, "Failed to register HDMI Jack %d\n", ret);
++			dev_err(card->dev, "Failed to register codec jack: %d\n", ret);
++			return ret;
+ 		}
+ 	}
+	

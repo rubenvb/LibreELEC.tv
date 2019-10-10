@@ -43,6 +43,24 @@ index a7c14f6ccd92..4b80e3c47248 100644
  		/* for rockchip boot on */
  		rockchip,pwm_id = <2>;
  		rockchip,pwm_voltage = <1000000>;
+@@ -225,7 +225,7 @@
+ 		compatible = "simple-audio-card";
+ 		simple-audio-card,format = "i2s";
+ 		simple-audio-card,mclk-fs = <256>;
+-		simple-audio-card,name = "rockchip,hdmi";
++		simple-audio-card,name = "HDMI";
+ 
+ 		simple-audio-card,cpu {
+ 		sound-dai = <&i2s2>;
+@@ -238,7 +238,7 @@
+ 	spdif-sound {
+ 		status = "okay";
+ 		compatible = "simple-audio-card";
+-		simple-audio-card,name = "ROCKCHIP,SPDIF";
++		simple-audio-card,name = "SPDIF";
+ 		simple-audio-card,cpu {
+ 			sound-dai = <&spdif>;
+ 		};
 @@ -381,10 +377,10 @@
  		reset-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>; /* GPIO0_B2 */
  	};
