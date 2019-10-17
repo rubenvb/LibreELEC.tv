@@ -35,14 +35,6 @@ index a7c14f6ccd92..4b80e3c47248 100644
  	xin32k: xin32k {
  		compatible = "fixed-clock";
  		clock-frequency = <32768>;
-@@ -185,6 +180,7 @@
- 		regulator-always-on;
- 		regulator-boot-on;
- 
-+
- 		/* for rockchip boot on */
- 		rockchip,pwm_id = <2>;
- 		rockchip,pwm_voltage = <1000000>;
 @@ -225,7 +225,7 @@
  		compatible = "simple-audio-card";
  		simple-audio-card,format = "i2s";
