@@ -172,6 +172,14 @@ index a7c14f6ccd92..4b80e3c47248 100644
  			regulator-off-in-suspend;
  		};
  	};
+@@ -924,6 +924,7 @@
+ &i2s1 {
+ 	assigned-clocks = <&cru SCLK_I2SOUT_SRC>;
+ 	assigned-clock-parents = <&cru SCLK_I2S1_8CH>;
++	status = "okay";
+ };
+ 
+ &i2s2 {
 @@ -1017,8 +1027,8 @@
  };
  
