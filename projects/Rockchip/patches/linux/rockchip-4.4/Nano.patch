@@ -35,7 +35,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  	xin32k: xin32k {
  		compatible = "fixed-clock";
  		clock-frequency = <32768>;
-@@ -225,7 +225,7 @@
+@@ -229,7 +224,7 @@
  		compatible = "simple-audio-card";
  		simple-audio-card,format = "i2s";
  		simple-audio-card,mclk-fs = <256>;
@@ -43,8 +43,8 @@ index a7c14f6ccd92..4b80e3c47248 100644
 +		simple-audio-card,name = "HDMI";
  
  		simple-audio-card,cpu {
- 		sound-dai = <&i2s2>;
-@@ -238,7 +238,7 @@
+ 			sound-dai = <&i2s2>;
+@@ -242,7 +237,7 @@
  	spdif-sound {
  		status = "okay";
  		compatible = "simple-audio-card";
@@ -53,7 +53,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  		simple-audio-card,cpu {
  			sound-dai = <&spdif>;
  		};
-@@ -381,10 +377,10 @@
+@@ -381,10 +376,10 @@
  		reset-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>; /* GPIO0_B2 */
  	};
  
@@ -66,11 +66,18 @@ index a7c14f6ccd92..4b80e3c47248 100644
  		sdio_vref = <1800>;
  		WIFI,host_wake_irq = <&gpio0 3 GPIO_ACTIVE_HIGH>; /* GPIO0_a3 */
  		status = "okay";
-@@ -527,6 +523,14 @@
+@@ -527,6 +522,21 @@
  	status = "okay";
  };
  
 +&rga {
++    compatible = "rockchip,rga2";
++	dev_mode = <1>;
++	reg = <0x0 0xff680000 0x0 0x1000>;
++	interrupts = <GIC_SPI 55 IRQ_TYPE_LEVEL_HIGH 0>;
++	clocks = <&cru ACLK_RGA>, <&cru HCLK_RGA>, <&cru SCLK_RGA_CORE>;
++	clock-names = "aclk_rga", "hclk_rga", "clk_rga";
++	power-domains = <&power RK3399_PD_RGA>;
 +	status = "okay";
 +};
 +
@@ -81,7 +88,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  &vpu {
  	status = "okay";
  	/* 0 means ion, 1 means drm */
-@@ -539,16 +543,22 @@
+@@ -539,16 +549,22 @@
  	//allocator = <0>;
  };
  
@@ -109,7 +116,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  	force-hpd;
  	/delete-property/ pinctrl-0;
  
-@@ -569,29 +579,28 @@
+@@ -569,29 +585,28 @@
  
  &route_edp {
  	status = "okay";
@@ -147,7 +154,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  };
  
  &i2c0 {
-@@ -624,7 +633,6 @@
+@@ -624,7 +639,6 @@
  	vdd_gpu: syr828@41 {
  		compatible = "silergy,syr828";
  		reg = <0x41>;
@@ -155,7 +162,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  		regulator-compatible = "fan53555-reg";
  		pinctrl-names = "default";
  		pinctrl-0 = <&vsel2_gpio>;
-@@ -632,12 +640,14 @@
+@@ -632,12 +646,14 @@
  		regulator-name = "vdd_gpu";
  		regulator-min-microvolt = <712500>;
  		regulator-max-microvolt = <1500000>;
@@ -172,15 +179,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  			regulator-off-in-suspend;
  		};
  	};
-@@ -924,6 +924,7 @@
- &i2s1 {
- 	assigned-clocks = <&cru SCLK_I2SOUT_SRC>;
- 	assigned-clock-parents = <&cru SCLK_I2S1_8CH>;
-+	status = "okay";
- };
- 
- &i2s2 {
-@@ -1017,8 +1027,8 @@
+@@ -1017,8 +1034,8 @@
  };
  
  &sdio0 {
@@ -191,7 +190,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  	supports-sdio;
  	bus-width = <4>;
  	disable-wp;
-@@ -1031,12 +1041,13 @@
+@@ -1031,12 +1048,13 @@
  	pinctrl-names = "default";
  	pinctrl-0 = <&sdio0_bus4 &sdio0_cmd &sdio0_clk>;
  	sd-uhs-sdr104;
@@ -207,7 +206,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  	supports-sd;
  	bus-width = <4>;
  	cap-mmc-highspeed;
-@@ -1059,6 +1070,7 @@
+@@ -1059,6 +1077,7 @@
  	status = "okay";
  };
  
@@ -215,7 +214,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  &tcphy0 {
  	extcon = <&fusb0>;
  	status = "okay";
-@@ -1130,14 +1142,6 @@
+@@ -1130,14 +1149,6 @@
  };
  
  &pinctrl {
@@ -230,7 +229,7 @@ index a7c14f6ccd92..4b80e3c47248 100644
  	pmic {
  		pmic_int_l: pmic-int-l {
  			rockchip,pins = <1 21 RK_FUNC_GPIO &pcfg_pull_up>;
-@@ -1168,6 +1172,11 @@
+@@ -1168,6 +1179,11 @@
  			rockchip,pins = <0 10 RK_FUNC_GPIO &pcfg_pull_none>;
  		};
  	};
