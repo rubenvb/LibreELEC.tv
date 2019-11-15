@@ -2,13 +2,13 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="crazycat"
-PKG_VERSION="532599d255411a24f93b585a92b1b0c49e2012f7"
-PKG_SHA256="0e3addc3562057a77edefdde0052a78aec145c4dd5b737b53dd25ce389b95093"
+PKG_VERSION="15144f1"
+PKG_SHA256="764a4d0f738b9574e382c8d650bfd163fa0009a2348e3ed9562e6cfcbbbe8a6f"
 PKG_LICENSE="GPL"
 PKG_SITE="https://bitbucket.org/CrazyCat/media_build"
 PKG_URL="https://bitbucket.org/CrazyCat/media_build/get/$PKG_VERSION.tar.gz"
-PKG_DEPENDS_TARGET="toolchain linux media_tree_cc"
-PKG_NEED_UNPACK="$LINUX_DEPENDS $(get_pkg_directory media_tree_cc)"
+PKG_DEPENDS_TARGET="toolchain linux linux-media"
+PKG_NEED_UNPACK="$LINUX_DEPENDS $(get_pkg_directory linux-media)"
 PKG_SECTION="driver.dvb"
 PKG_LONGDESC="DVB driver for TBS cards with CrazyCats additions"
 
@@ -25,7 +25,7 @@ pre_make_target() {
 }
 
 make_target() {
-  cp -RP $(get_build_dir media_tree_cc)/* $PKG_BUILD/linux
+  cp -RP $(get_build_dir linux-media)/* $PKG_BUILD/linux
 
   # make config all
   kernel_make VER=$KERNEL_VER SRCDIR=$(kernel_path) allyesconfig
