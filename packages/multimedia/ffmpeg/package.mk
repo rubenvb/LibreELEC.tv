@@ -42,7 +42,7 @@ fi
 
 if [ "$PROJECT" = "Rockchip" ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET rkmpp"
-  PKG_NEED_UNPACK+=" $(get_pkg_directory rkmpp)"	  
+  PKG_NEED_UNPACK+=" $(get_pkg_directory rkmpp)"
   PKG_PATCH_DIRS+=" rkmpp"
   PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm --enable-version3"
 else
