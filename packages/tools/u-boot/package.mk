@@ -19,8 +19,8 @@ PKG_NEED_UNPACK="$PROJECT_DIR/$PROJECT/bootloader"
 
 case "$PROJECT" in
   Rockchip)
-    PKG_VERSION="e16f1484471324878143b98e14ae3ebb302bb3c5"
-    PKG_SHA256="b5aba51d0940a14410897f2f8f87d0e0cc7b6bcf9285dc0610c53aef4c4c6048"
+    PKG_VERSION="783f7f6ecf69eeeb89fcf07cf9c1e317edc4a9dd"
+    PKG_SHA256="2bb105ceb2a70c9a702b0b49c3effa1ad313918a24ead46747f8dcade5e293f7"
     PKG_URL="https://github.com/Joern-P/u-boot/archive/$PKG_VERSION.tar.gz"
     PKG_PATCH_DIRS="rockchip"
     PKG_DEPENDS_TARGET+=" rkbin"

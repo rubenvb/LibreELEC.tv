@@ -21,5 +21,6 @@ pre_make_target() {
 
   mkdir -p $INSTALL/usr/lib/
     cp -PR lib/librga.so $INSTALL/usr/lib/
+	cp -PR *.h $SYSROOT_PREFIX/usr/include/
 }
                        

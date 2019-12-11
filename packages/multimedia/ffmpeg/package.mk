@@ -9,7 +9,7 @@ PKG_SHA256="e11e7594af35f36ab2711252c3d6bb106908f26605498aef4a9be2d7bc001db2"
 PKG_LICENSE="LGPLv2.1+"
 PKG_SITE="https://ffmpeg.org"
 PKG_URL="https://github.com/xbmc/FFmpeg/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex"
+PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex "
 PKG_LONGDESC="FFmpeg is a complete, cross-platform solution to record, convert and stream audio and video."
 PKG_BUILD_FLAGS="-gold"
 
@@ -41,10 +41,10 @@ else
 fi
 
 if [ "$PROJECT" = "Rockchip" ]; then
-  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET rkmpp"
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET rkmpp "
   PKG_NEED_UNPACK+=" $(get_pkg_directory rkmpp)"
   PKG_PATCH_DIRS+=" rkmpp"
-  PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm --enable-version3"
+  PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm  --enable-version3"
 else
   PKG_FFMPEG_RKMPP="--disable-rkmpp"
 fi
@@ -118,7 +118,6 @@ configure_target() {
               --disable-static \
               --enable-shared \
               --enable-gpl \
-              --disable-version3 \
               --enable-nonfree \
               --enable-logging \
               --disable-doc \
