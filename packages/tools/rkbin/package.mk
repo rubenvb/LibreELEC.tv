@@ -3,8 +3,8 @@
 
 PKG_NAME="rkbin"
 # Version is: Kwiboo/tag:libreelec-ba436b9
-PKG_VERSION="67a9f9603990b90492408f5319f637a4ede059b8"
-PKG_SHA256="0c7ff92c442f3ead64c67e3f337bbc4b19bbb12c263e4abba366c3b480a66242"
+PKG_VERSION="7c1d75f1da57884dcee0586ea2930e436a6c7ffb"
+PKG_SHA256="f384c119a7418dcc504097e8d47a4906f6082af74df50604c2406da9be667ed8"
 PKG_ARCH="arm aarch64"
 PKG_LICENSE="nonfree"
 PKG_SITE="https://github.com/rockchip-linux/rkbin"
