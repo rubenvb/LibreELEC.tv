@@ -2,8 +2,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="rkmpp"
-PKG_VERSION="459eace2054e1f3557e5fcaaff1bd2fc3a20271a"
-PKG_SHA256="0e29170870ea89cc957c09a0f556c76daf527ee5235587ab41f33eacf1b806f5"
+PKG_VERSION="16e7f330f206080b9fc6b1cf6957c9c840f38931"
+PKG_SHA256="b0f2f40b6cf23dbce980ca0f15831e7f6d4730f6f7b3f334603be8a214fa3934"
 PKG_ARCH="arm aarch64"
 PKG_LICENSE="APL"
 PKG_SITE="https://github.com/rockchip-linux/mpp"
