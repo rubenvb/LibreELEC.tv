@@ -24,8 +24,8 @@ case $KODI_VENDOR in
     PKG_SOURCE_NAME="kodi-$KODI_VENDOR-$PKG_VERSION.tar.gz"
     ;;
   rockchip)
-    PKG_VERSION="ddde2cd5bf9baa732e725931d0de3c4ae90c5b18"
-    PKG_SHA256="8898f2802014136b80ff7af9a15c461c6d087ec204bf2d0259bc7d225e2dff6c"
+    PKG_VERSION="9d2ee96be3680d6178fa4849fb6f5986a9824ff1"
+    PKG_SHA256="2f31221ffd20c3a1451e69db62bf23bcf4177002ff06bc9c476e54fdaee54413"
     PKG_URL="https://github.com/xbmc/xbmc/archive/$PKG_VERSION.tar.gz"
     PKG_SOURCE_NAME="kodi-$KODI_VENDOR-$PKG_VERSION.tar.gz"
     ;;
