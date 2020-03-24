@@ -2,8 +2,8 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="linux-media"
-PKG_VERSION="2019-11-01-d065070e009b"
-PKG_SHA256="de33fc43d6f59b5e307a8ab78751e70bebbc4567a6634cadddcb6343bedc56f1"
+PKG_VERSION="2020-02-11-ef0ed05dcef8"
+PKG_SHA256="1e3bf6480b0a36b4cc47daae6ba56898cb119be6d8c1a6b44481a2165b15ea72"
 PKG_LICENSE="GPL"
 PKG_SITE="https://linuxtv.org/downloads/drivers/"
 PKG_URL="$PKG_SITE/$PKG_NAME-$PKG_VERSION.tar.bz2"
@@ -26,5 +26,7 @@ post_unpack() {
   sed -i 's|^.*drivers/staging/media/atomisp.*$||' \
     $PKG_BUILD/drivers/staging/media/Kconfig
 }
+
+
 
 

@@ -2,8 +2,8 @@
 # Copyright (C) 2016-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="crazycat"
-PKG_VERSION="15144f1"
-PKG_SHA256="764a4d0f738b9574e382c8d650bfd163fa0009a2348e3ed9562e6cfcbbbe8a6f"
+PKG_VERSION="b89f3ec"
+PKG_SHA256="9abf4b8e4e5801c0258af7bb75c3b9ad6a94da96e904dbf3aa718969b0ad0225"
 PKG_LICENSE="GPL"
 PKG_SITE="https://bitbucket.org/CrazyCat/media_build"
 PKG_URL="https://bitbucket.org/CrazyCat/media_build/get/$PKG_VERSION.tar.gz"
