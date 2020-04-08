@@ -18,4 +18,6 @@ else
 fi
 
 PKG_CMAKE_OPTS_TARGET="-DENABLE_VP9D=$PKG_ENABLE_VP9D \
-                       -DHAVE_DRM=ON"
+		       -DRKPLATFORM=ON \
+                       -DHAVE_DRM=ON" 
+			

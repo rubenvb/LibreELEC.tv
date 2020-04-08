@@ -4,12 +4,12 @@
 
 PKG_NAME="ffmpeg"
 # Current branch is: release/4.0-kodi
-PKG_VERSION="n4.0.5"
-PKG_SHA256="de1b76d79eb565497ce5e7fdb1e3ff56129332aaa8025c1520e5a68fdc4e7d22"
+PKG_VERSION="a9790904e72cee48dc176bb8cd405df71e10e6e4"
+PKG_SHA256="9df9b29f89a85e24e97c63be25c2429a32c2a82614c7bfb6e58c82927a7ffee8"
 PKG_LICENSE="LGPLv2.1+"
 PKG_SITE="https://ffmpeg.org"
-PKG_URL="https://github.com/FFmpeg/FFmpeg/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex "
+PKG_URL="https://github.com/Joern-P/FFmpeg/archive/${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex rga"
 PKG_LONGDESC="FFmpeg is a complete, cross-platform solution to record, convert and stream audio and video."
 PKG_BUILD_FLAGS="-gold"
 
@@ -44,7 +44,7 @@ if [ "$PROJECT" = "Rockchip" ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET rkmpp "
   PKG_NEED_UNPACK+=" $(get_pkg_directory rkmpp)"
   PKG_PATCH_DIRS+=" rkmpp"
-  PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm  --enable-version3"
+  PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm --enable-librga --enable-version3"
 else
   PKG_FFMPEG_RKMPP="--disable-rkmpp"
 fi

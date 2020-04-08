@@ -31,6 +31,15 @@ if [ "$DISPLAYSERVER" = "x11" ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET libxcb libX11"
 fi
 
+if [ "$PROJECT" = "Rockchip" ]; then
+  PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET rkmpp "
+  PKG_NEED_UNPACK+=" $(get_pkg_directory rkmpp)"
+  PKG_PATCH_DIRS+=" rkmpp"
+  PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm --enable-version3 --enable-encoder=h264_rkmpp"
+else
+  PKG_FFMPEG_RKMPP="--disable-rkmpp"
+fi
+
 pre_configure_target() {
   cd $PKG_BUILD
   rm -rf .$TARGET_NAME
@@ -174,6 +183,7 @@ configure_target() {
     --extra-ldflags="$LDFLAGS" \
     --extra-libs="$PKG_FFMPEG_LIBS" \
     --enable-pic \
+    $PKG_FFMPEG_RKMPP \
     --enable-gnutls \
     --disable-openssl \
     \
