@@ -37,12 +37,14 @@ PKG_TVH_TRANSCODING="\
   --enable-libvorbis \
   --enable-libvpx \
   --enable-libx264 \
+  --enable-encoder=h264_rkmpp \
+  --enable-encoder=libvpx_vp8 \
+  --enable-encoder=libvpx_vp9 \
   --enable-libx265"
 
 # specific transcoding options
 if [[ "$TARGET_ARCH" != "x86_64" ]]; then
   PKG_TVH_TRANSCODING="$PKG_TVH_TRANSCODING \
-    --disable-libvpx \
     --disable-libx265"
 fi
 

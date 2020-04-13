@@ -7,7 +7,7 @@ PKG_SHA256="cec7c87e9b60d174509e263ac4011b522385fd0775292e1670ecc1180c9bb6d4"
 PKG_LICENSE="LGPLv2.1+"
 PKG_SITE="https://ffmpeg.org"
 PKG_URL="https://ffmpeg.org/releases/ffmpeg-$PKG_VERSION.tar.xz"
-PKG_DEPENDS_TARGET="toolchain aom bzip2 gnutls libvorbis opus x264 zlib"
+PKG_DEPENDS_TARGET="toolchain aom bzip2 gnutls x264-system libvpx-system libvorbis opus x264 zlib"
 PKG_LONGDESC="FFmpegx is an complete FFmpeg build to support encoding and decoding."
 PKG_BUILD_FLAGS="-gold"
 
@@ -35,7 +35,7 @@ if [ "$PROJECT" = "Rockchip" ]; then
   PKG_DEPENDS_TARGET="$PKG_DEPENDS_TARGET rkmpp "
   PKG_NEED_UNPACK+=" $(get_pkg_directory rkmpp)"
   PKG_PATCH_DIRS+=" rkmpp"
-  PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm --enable-version3 --enable-encoder=h264_rkmpp"
+  PKG_FFMPEG_RKMPP="--enable-rkmpp --enable-libdrm --enable-version3 --enable-encoder=h264_rkmpp --enable-encoder=libx264rgb --enable-encoder=libvpx_vp8 --enable-encoder=libvpx_vp9"
 else
   PKG_FFMPEG_RKMPP="--disable-rkmpp"
 fi
@@ -105,8 +105,6 @@ pre_configure_target() {
     --enable-encoder=libvpx_vp9 \
     --enable-libx264 \
     --enable-encoder=x264 \
-    --enable-libx265 \
-    --enable-encoder=x265 \
     --enable-libaom \
     --enable-encoder=libaom_av1 \
     \

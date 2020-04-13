@@ -9,7 +9,7 @@ PKG_SHA256="9df9b29f89a85e24e97c63be25c2429a32c2a82614c7bfb6e58c82927a7ffee8"
 PKG_LICENSE="LGPLv2.1+"
 PKG_SITE="https://ffmpeg.org"
 PKG_URL="https://github.com/Joern-P/FFmpeg/archive/${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex rga"
+PKG_DEPENDS_TARGET="toolchain zlib bzip2 openssl speex x264-system libvpx-system rga"
 PKG_LONGDESC="FFmpeg is a complete, cross-platform solution to record, convert and stream audio and video."
 PKG_BUILD_FLAGS="-gold"
 
@@ -159,6 +159,10 @@ configure_target() {
               --enable-encoder=wmav2 \
               --enable-encoder=mjpeg \
               --enable-encoder=png \
+              --enable-encoder=libx264 \
+              --enable-encoder=libx264rgb \
+              --enable-encoder=libvpx_vp8 \
+              --enable-encoder=libvpx_vp9 \
               --enable-hwaccels \
               --disable-muxers \
               --enable-muxer=spdif \
